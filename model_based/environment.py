@@ -17,10 +17,11 @@ class T3Environment():
         self.states = []
         for s in itertools.product('012', repeat=9):
             # ignore invalid states (corresponds of number of player action and that of cpu acition is invalid)
+            # and states only cpu can take action (number of player action = number of cpu action + 1)
             num_1 = s.count('1')
             num_2 = s.count('2')
 
-            if abs(num_1 - num_2) > 1:
+            if num_1 - num_2 > 0:
                 continue
 
             self.states.append(''.join(s))
