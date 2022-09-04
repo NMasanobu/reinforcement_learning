@@ -100,8 +100,8 @@ class TicTacToe():
         sum_v = self.matrix.sum(0)
         sum_h = self.matrix.sum(1)
         sum_d = [
-            game.matrix[0, 0] + game.matrix[1, 1] + game.matrix[2, 2],
-            game.matrix[0, 2] + game.matrix[1, 1] + game.matrix[2, 0]
+            self.matrix[0, 0] + self.matrix[1, 1] + self.matrix[2, 2],
+            self.matrix[0, 2] + self.matrix[1, 1] + self.matrix[2, 0]
         ]
         sum_0_1 = np.hstack([sum_v, sum_h, sum_d])
 
