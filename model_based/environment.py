@@ -16,12 +16,17 @@ class T3Environment():
 
         self.states = []
         for s in itertools.product('012', repeat=9):
-            # ignore invalid states (corresponds of number of player action and that of cpu acition is invalid)
-            # and states only cpu can take action (number of player action = number of cpu action + 1)
+            num_0 = s.count('0')
             num_1 = s.count('1')
             num_2 = s.count('2')
 
-            if num_1 - num_2 > 0:
+            # ignore invalid states (corresponds of number of player action and that of cpu acition is invalid)
+            if abs(num_1 - num_2) > 1:
+                continue
+
+            # ignore states only cpu can take action (number of player action = number of cpu action + 1)
+            # but end states (no zeros) will be validated
+            elif num_1 - num_2 > 0 and num_0 > 0:
                 continue
 
             self.states.append(''.join(s))
@@ -109,10 +114,32 @@ class T3Environment():
         reward = 0.
         state_type = self.check_state(state)
 
-        if state_type == 1:
-            reward = 1.
-        elif state_type == 2:
-            reward = -1.
+        num_0 = state.count('0')
+
+        # calculate reward only at game end state.
+        if num_0 == 0:
+            num_1 = state.count('1')
+            num_2 = state.count('2')
+
+            player_first = True
+            if num_1 < num_2:
+                player_first = False
+
+            if player_first:
+                if state_type == 1:
+                    reward = 2.
+                elif state_type == 2:
+                    reward = -10.
+                elif state_type == 3:
+                    reward = -2.
+
+            else:
+                if state_type == 1:
+                    reward = 10.
+                elif state_type == 2:
+                    reward = -10.
+                elif state_type == 3:
+                    reward = 10.
 
         return reward
 
