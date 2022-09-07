@@ -6,23 +6,43 @@ import numpy as np
 
 from game.tic_tac_toe import TicTacToe
 from model_based.environment import T3Environment
-from model_based.planner import ValueIterationPlanner
+from model_based.planner import ValueIterationPlanner, PolicyIterationPlanner
 
-def train():
+def train(target):
     env = T3Environment()
-    planner = ValueIterationPlanner(env)
-    V = planner.plan()
 
-    with open('output/model_based_vi.json', mode='w') as f:
-        json.dump(V, f)
+    if target == 'mb_vi':
+        planner = ValueIterationPlanner(env)
+        V = planner.plan()
 
-def play():
+        with open('output/model_based_vi.json', mode='w') as f:
+            json.dump(V, f)
+
+    elif target == 'mb_pi':
+        planner = PolicyIterationPlanner(env)
+        V, policy = planner.plan()
+
+        with open('output/model_based_pi_value.json', mode='w') as f:
+            json.dump(V, f)
+
+        with open('output/model_based_pi_policy.json', mode='w') as f:
+            json.dump(policy, f)
+
+def play(target):
     game = TicTacToe()
     env = T3Environment()
 
-    with open('output/model_based_vi.json') as f:
-        V = json.load(f)
+    V = None
+    P = None
+
+    if target == 'mb_vi':
+        with open('output/model_based_vi.json') as f:
+            V = json.load(f)
     
+    elif target == 'mb_pi':
+        with open('output/model_based_pi_policy.json') as f:
+            P = json.load(f)
+
     n_episodes = 1000
 
     # result
@@ -44,33 +64,42 @@ def play():
         state_type = 0
         while state_type == 0:
             available_actions = game.get_available_actions()
+            state_str = env.matrix2state(game.matrix)
 
-            value_list = [] # order coresponds that of avaliable_actions
-            for a in available_actions:
-                next_state_list = []
-                state_str = env.matrix2state(game.matrix)
-                state_list = list(state_str)
+            # Select action
+            if V is not None:
+                # value base
+                value_list = [] # order coresponds that of avaliable_actions
+                for a in available_actions:
+                    next_state_list = []
+                    state_str_list = list(state_str)
 
-                # apply action
-                state_list[a] = '1'
+                    # apply action
+                    state_str_list[a] = '1'
 
-                if not '0' in state_list:
-                    # all cells are filled
-                    next_state_list.append(''.join(state_list))
+                    if not '0' in state_str_list:
+                        # all cells are filled
+                        next_state_list.append(''.join(state_str_list))
 
-                else:
-                    # posible states after cpu action
-                    for i in range(9):
-                        if state_list[i] == '0':
-                            state_list_copy = deepcopy(state_list)
-                            state_list_copy[i] = '2'
-                            next_state_list.append(''.join(state_list_copy))
+                    else:
+                        # posible states after cpu action
+                        for i in range(9):
+                            if state_str_list[i] == '0':
+                                state_list_copy = deepcopy(state_str_list)
+                                state_list_copy[i] = '2'
+                                next_state_list.append(''.join(state_list_copy))
+
+                    # maximize expected value
+                    value_list.append(np.mean([V[s] for s in next_state_list]))
 
                 # maximize expected value
-                value_list.append(np.mean([V[s] for s in next_state_list]))
+                action = available_actions[np.argmax(value_list)]
 
-            # maximize expected value
-            action = available_actions[np.argmax(value_list)]
+            elif P is not None:
+                # In policy P, actions are defined as string
+                available_actions_str = [str(a) for a in available_actions]
+                action = int(max(available_actions_str, key=P[state_str].get))
+                
             state_type = game.step(action)
 
         if state_type == 1:
@@ -113,18 +142,24 @@ def play():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train", action='store_true', help='If execute train method.')
-    parser.add_argument("--play", action='store_true', help='If execute play method.')
+    choices = ['mb_vi', 'mb_pi']
+    parser.add_argument('-t', '--train',
+                        help='Train target. If not given, train method is not executed.',
+                        choices=choices)
+    parser.add_argument('-p', '--play',
+                        help='Play target. If not given, play method is not executed.',
+                        choices=choices)
 
     args = parser.parse_args()
-    require_train = args.train
-    require_play = args.play
+    train_target = args.train
+    play_target = args.play
 
-    if not (require_train or require_play):
+    if not (play_target or train_target):
+        print('At least one of optional targets -t or -p is required.')
         parser.print_help()
     
-    if require_train:
-        train()
+    if train_target:
+        train(train_target)
 
-    if require_play:
-        play()
+    if play_target:
+        play(play_target)

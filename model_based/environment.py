@@ -91,6 +91,14 @@ class T3Environment():
 
         return is_valid
 
+    def get_available_actions_at(self, state):
+        actions = []
+        for a in range(9):
+            if state[a] == '0':
+                actions.append(a)
+
+        return actions
+
     def transit_func(self, state, action):
         '''
         returns:
@@ -165,7 +173,7 @@ class T3Environment():
     def matrix2state(self, matrix):
         matrix = matrix.reshape(9).astype(int)
         matrix[matrix==-1] = 2
-        state = [str(s) for s in matrix]
+        state = ''.join([str(s) for s in matrix])
 
         return state
 
