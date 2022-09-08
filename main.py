@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 
 from game.tic_tac_toe import TicTacToe
-from model_based.environment import T3Environment
+from environment import T3Environment
 from model_based.planner import ValueIterationPlanner, PolicyIterationPlanner
 
 def train(target):
@@ -99,7 +99,7 @@ def play(target):
                 # In policy P, actions are defined as string
                 available_actions_str = [str(a) for a in available_actions]
                 action = int(max(available_actions_str, key=P[state_str].get))
-                
+
             state_type = game.step(action)
 
         if state_type == 1:

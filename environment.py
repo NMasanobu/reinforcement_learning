@@ -5,7 +5,6 @@ from copy import deepcopy
 import numpy as np
 
 # for debugging
-sys.path.append('.')
 from game.tic_tac_toe import TicTacToe
 
 class T3Environment():
