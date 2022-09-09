@@ -7,6 +7,7 @@ import numpy as np
 from game.tic_tac_toe import TicTacToe
 from environment import T3Environment
 from model_based.planner import ValueIterationPlanner, PolicyIterationPlanner
+from model_free.t3_agent import MonteCarloAgent
 
 def train(target):
     env = T3Environment()
@@ -28,12 +29,23 @@ def train(target):
         with open('output/model_based_pi_policy.json', mode='w') as f:
             json.dump(policy, f)
 
+    elif target == 'mf_mc':
+        # only exploration
+        agent = MonteCarloAgent(env, epsilon=1.)
+        agent.learn(episode_count=1000000)
+        print(len(env.states), len(agent.Q))
+        
+        with open('output/model_free_mc_Q.json', mode='w') as f:
+            json.dump(agent.Q, f)
+
 def play(target):
     game = TicTacToe()
     env = T3Environment()
 
-    V = None
-    P = None
+    # Use one of them
+    V = None # Value of each state
+    P = None # Policy
+    agent = None
 
     if target == 'mb_vi':
         with open('output/model_based_vi.json') as f:
@@ -42,6 +54,14 @@ def play(target):
     elif target == 'mb_pi':
         with open('output/model_based_pi_policy.json') as f:
             P = json.load(f)
+
+    elif target == 'mf_mc':
+        from model_free.t3_agent import MonteCarloAgent
+        
+        with open('output/model_free_mc_Q.json') as f:
+            Q = json.load(f)
+        agent = MonteCarloAgent(env, epsilon=0.)
+        agent.load(Q)
 
     n_episodes = 1000
 
@@ -98,7 +118,12 @@ def play(target):
             elif P is not None:
                 # In policy P, actions are defined as string
                 available_actions_str = [str(a) for a in available_actions]
+
+                # Policy P has probability of available actions
                 action = int(max(available_actions_str, key=P[state_str].get))
+
+            elif agent is not None:
+                action = agent.select_action(state_str, available_actions)
 
             state_type = game.step(action)
 
@@ -142,7 +167,7 @@ def play(target):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    choices = ['mb_vi', 'mb_pi']
+    choices = ['mb_vi', 'mb_pi', 'mf_mc']
     parser.add_argument('-t', '--train',
                         help='Train target. If not given, train method is not executed.',
                         choices=choices)

@@ -38,6 +38,25 @@ class T3Environment():
     def game_start(self):
         self.t3_game.start()
 
+    def step(self, action):
+        state_type = self.t3_game.step(action)
+        done = state_type != 0
+
+        next_state = self.matrix2state(self.t3_game.matrix)
+
+        # simple reward
+        # win: 1
+        # lose: -1
+        # others: 0
+        reward = 0 
+        if state_type == 1:
+            reward = 1
+        elif state_type == 2:
+            reward = -1
+
+        return next_state, reward, done
+
+
     def check_state(self, state):
         '''
         check current state:
@@ -175,6 +194,12 @@ class T3Environment():
         state = ''.join([str(s) for s in matrix])
 
         return state
+
+    def get_state(self, is_matrix=False):
+        if is_matrix:
+            return self.t3_game.matrix
+        else:
+            return self.matrix2state(self.t3_game.matrix)
 
 if __name__ == '__main__':
     env = T3Environment()
