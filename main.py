@@ -9,7 +9,7 @@ from environment import T3Environment
 from model_based.planner import ValueIterationPlanner, PolicyIterationPlanner
 from model_free.t3_agent import MonteCarloAgent
 
-TARGET_LIST = ['mb_vi', 'mb_pi', 'mf_mc', 'mf_ql']
+TARGET_LIST = ['mb_vi', 'mb_pi', 'mf_mc', 'mf_ql', 'mf_sarsa']
 
 def train(target):
     env = T3Environment()
@@ -53,6 +53,16 @@ def train(target):
         with open('output/model_free_ql_Q.json', mode='w') as f:
             json.dump(agent.Q, f)
 
+    elif target == 'mf_sarsa':
+        agent = MonteCarloAgent(env, epsilon=.2)
+        agent.learn(episode_count=1000000)
+
+        # if less than 4520, it means that episode_count is too small
+        print(len(agent.Q))
+        
+        with open('output/model_free_sarsa_Q.json', mode='w') as f:
+            json.dump(agent.Q, f)
+
 
 def play(target):
     game = TicTacToe()
@@ -85,6 +95,14 @@ def play(target):
         with open('output/model_free_ql_Q.json') as f:
             Q = json.load(f)
         agent = QlearningAgent(env, epsilon=0.)
+        agent.load(Q)
+
+    elif target == 'mf_sarsa':
+        from model_free.t3_agent import SARSAAgent
+        
+        with open('output/model_free_sarsa_Q.json') as f:
+            Q = json.load(f)
+        agent = SARSAAgent(env, epsilon=0.)
         agent.load(Q)
 
     n_episodes = 1000
