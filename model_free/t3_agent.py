@@ -114,6 +114,38 @@ class MonteCarloAgent(Agent):
                 alpha = 1 / self.N[s][a]
                 self.Q[s][a] = alpha * (G - self.Q[s][a])
 
+class QlearningAgent(Agent):
+    def learn(self, episode_count=10000, gamma=0.9, lr=0.1):
+        self.clear_log()
+
+        num_actions = list(range(9))
+        self.Q = defaultdict(lambda: [0] * len(num_actions))
+
+        for e in range(episode_count):
+            self.env.reset()
+            self.env.game_start()
+
+            # 1. Play until the end of game
+            done = False
+            state = self.env.get_state()
+            while not done:
+                available_actions = self.env.get_available_actions_at(state)
+                action = self.select_action(state, available_actions)
+                
+                # initialize defaultdict
+                if state not in self.Q:
+                    self.Q[state]
+
+                next_state, reward, done = self.env.step(action)
+                
+                gain = reward + gamma * max(self.Q[state])
+                estimated = self.Q[state][action]
+                self.Q[state][action] = estimated + lr * (gain - estimated)
+
+                state = next_state
+
+            self.log(reward)
+
 if __name__ == '__main__':
     #agent = MonteCarloAgent(0.1)
     hoge = defaultdict(lambda: [0] * len(fuga))
