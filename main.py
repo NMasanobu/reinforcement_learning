@@ -7,9 +7,9 @@ import numpy as np
 from game.tic_tac_toe import TicTacToe
 from environment import T3Environment
 from model_based.planner import ValueIterationPlanner, PolicyIterationPlanner
-from model_free.t3_agent import MonteCarloAgent
+from model_free.t3_agent import MonteCarloAgent, QlearningAgent, SARSAAgent, ActorCritic
 
-TARGET_LIST = ['mb_vi', 'mb_pi', 'mf_mc', 'mf_ql', 'mf_sarsa']
+TARGET_LIST = ['mb_vi', 'mb_pi', 'mf_mc', 'mf_ql', 'mf_sarsa', 'mf_ac']
 
 def train(target):
     env = T3Environment()
@@ -44,7 +44,7 @@ def train(target):
 
     elif target == 'mf_ql':
         # only exploration
-        agent = MonteCarloAgent(env, epsilon=1.)
+        agent = QlearningAgent(env, epsilon=1.)
         agent.learn(episode_count=1000000)
 
         # if less than 4520, it means that episode_count is too small
@@ -54,14 +54,30 @@ def train(target):
             json.dump(agent.Q, f)
 
     elif target == 'mf_sarsa':
-        agent = MonteCarloAgent(env, epsilon=.2)
-        agent.learn(episode_count=1000000)
+        agent = SARSAAgent(env, epsilon=.2)
+        agent.learn(episode_count=5000000)
 
         # if less than 4520, it means that episode_count is too small
         print(len(agent.Q))
         
         with open('output/model_free_sarsa_Q.json', mode='w') as f:
             json.dump(agent.Q, f)
+            
+    elif target == 'mf_ac':
+        agent = ActorCritic(env)
+        agent.learn(episode_count=1000000)
+
+        # if less than 4520, it means that episode_count is too small
+        print(len(agent.actor.Q))
+        
+        with open('output/model_free_ac_Q.json', mode='w') as f:
+            Q = {}
+            for s, action_probs in agent.actor.Q.items():
+                Q[s] = action_probs.tolist()
+            json.dump(Q, f)
+        
+        with open('output/model_free_ac_value.json', mode='w') as f:
+            json.dump(agent.critic.V, f)
 
 
 def play(target):
@@ -82,27 +98,33 @@ def play(target):
             P = json.load(f)
 
     elif target == 'mf_mc':
-        from model_free.t3_agent import MonteCarloAgent
-        
         with open('output/model_free_mc_Q.json') as f:
             Q = json.load(f)
         agent = MonteCarloAgent(env, epsilon=0.)
         agent.load(Q)
 
     elif target == 'mf_ql':
-        from model_free.t3_agent import QlearningAgent
-        
         with open('output/model_free_ql_Q.json') as f:
             Q = json.load(f)
         agent = QlearningAgent(env, epsilon=0.)
         agent.load(Q)
 
     elif target == 'mf_sarsa':
-        from model_free.t3_agent import SARSAAgent
-        
         with open('output/model_free_sarsa_Q.json') as f:
             Q = json.load(f)
         agent = SARSAAgent(env, epsilon=0.)
+        agent.load(Q)
+
+    elif target == 'mf_sarsa':
+        with open('output/model_free_sarsa_Q.json') as f:
+            Q = json.load(f)
+        agent = ActorCritic(env, epsilon=0.)
+        agent.load(Q)
+
+    elif target == 'mf_ac':
+        with open('output/model_free_ac_Q.json') as f:
+            Q = json.load(f)
+        agent = ActorCritic(env).actor
         agent.load(Q)
 
     n_episodes = 1000

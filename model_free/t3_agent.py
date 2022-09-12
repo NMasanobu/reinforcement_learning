@@ -163,17 +163,18 @@ class SARSAAgent(Agent):
             while not done:
                 available_actions = self.env.get_available_actions_at(state)
                 action = self.select_action(state, available_actions)
-                
-                # initialize defaultdict
-                if state not in self.Q:
-                    self.Q[state]
 
                 next_state, reward, done = self.env.step(action)
-                # On-Policy
-                next_available_actions = self.env.get_available_actions_at(next_state)
-                next_action = self.select_action(next_state, next_available_actions)
+                
+                if not done:
+                    next_available_actions = self.env.get_available_actions_at(next_state)
+                    next_action = self.select_action(next_state, next_available_actions)
 
-                gain = reward + gamma * self.Q[state][next_action]
+                    gain = reward + gamma * self.Q[next_state][next_action]
+                
+                else:
+                    gain = reward
+
                 estimated = self.Q[state][action]
                 self.Q[state][action] = estimated + lr * (gain - estimated)
 
@@ -181,10 +182,77 @@ class SARSAAgent(Agent):
 
             self.log(reward)
 
+class Actor(Agent):
+    def __init__(self, env):
+        super().__init__(env, epsilon=-1)
+
+        for s in env.states:
+            self.Q[s] = np.zeros(len(self.env.actions))
+
+    def softmax(self, x):
+        return np.exp(x) / np.sum(np.exp(x), axis=0)
+
+    def select_action(self, state, actions):
+        prob = self.softmax(self.Q[state][actions])
+        action = np.random.choice(actions, 1, p=prob)
+
+        return action[0]
+        
+    def load(self, Q, N=None):
+        Q_ = {}
+        for s, actions in Q.items():
+            Q_[s] = np.array(actions)
+        self.Q = Q_
+
+        if N is not None:
+            self.N = N
+
+class Critic():
+    def __init__(self, env):
+        self.V = {}
+        for s in env.states:
+            self.V[s] = 0
+
+class ActorCritic():
+    def __init__(self, env):
+        self.actor = Actor(env)
+        self.critic = Critic(env)
+        self.env = env
+
+    def learn(self, episode_count=10000, gamma=0.9, lr=0.1):
+        self.actor.clear_log()
+
+        for e in range(episode_count):
+            self.env.reset()
+            self.env.game_start()
+
+            # 1. Play until the end of game
+            done = False
+            state = self.env.get_state()
+            while not done:
+                available_actions = self.env.get_available_actions_at(state)
+                action = self.actor.select_action(state, available_actions)
+
+                next_state, reward, done = self.env.step(action)
+
+
+                if not done:
+                    gain = reward + gamma * self.critic.V[next_state]
+
+                else:
+                    gain = reward
+                    
+                estimated = self.critic.V[state]
+                td = gain - estimated
+
+                self.actor.Q[state][action] += lr * td
+                self.critic.V[state] += lr * td
+
+                state = next_state
+
+            self.actor.log(reward)
+
 if __name__ == '__main__':
     #agent = MonteCarloAgent(0.1)
-    hoge = defaultdict(lambda: [0] * len(fuga))
-
-    for i in range(0, 4):
-        fuga = ''.join(['x'] * i)
-        print(hoge[i])
+    hoge = np.random.uniform(0, 1, 9)
+    print(hoge)
