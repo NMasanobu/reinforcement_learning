@@ -1,10 +1,8 @@
-import sys
 import itertools
 from copy import deepcopy
 
 import numpy as np
 
-# for debugging
 from game.tic_tac_toe import TicTacToe
 
 class T3Environment():
