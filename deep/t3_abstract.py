@@ -41,6 +41,9 @@ class Agent():
         self.use_prob_estimation = False
         self.initialized = False
 
+    def save(self, model_path):
+        self.model.save(model_path, overwrite=True, include_optimizer=False)
+
     @classmethod
     def load(cls, env: Observer, model_path, epsilon=1e-4):
         agent = cls(epsilon)
@@ -135,9 +138,9 @@ class Agent():
         print(f'others: {others}')
 
 class Trainer():
-    def __init__(self, buffer_size=1024, baych_size=32, gamma=0.9, report_interval=10, log_dir='log'):
+    def __init__(self, buffer_size=1024, batch_size=32, gamma=0.9, report_interval=10, log_dir='log'):
         self.buffer_size = buffer_size
-        self.baych_size = baych_size
+        self.batch_size = batch_size
         self.gamma = gamma
         self.report_interval = report_interval
         
@@ -153,7 +156,21 @@ class Trainer():
         return self.__class__.__name__
 
     def reward_func(self, state_type):
-        pass
+        # default reward; game continuing
+        # Winning faster is better, so default reward is minus value
+        reward = 0.
+
+        if state_type == 1:
+            # win
+            reward = 1.
+        elif state_type == 2:
+            # lose
+            reward = -1.
+        elif state_type == 9:
+            # unexpected state
+            raise Exception('invalid state')
+
+        return reward
 
     def train_loop(self, env: Observer, agent: Agent, n_episodes=200, initial_count=-1, observe_interval=0):
         self.experiences = deque(maxlen=self.buffer_size)
@@ -210,6 +227,10 @@ class Trainer():
 
     def postprocess(self, episode, step_count, agent):
         pass
+
+    def get_recent_experiences(self, count):
+        recent_indices = range(len(self.experiences) - count, len(self.experiences))
+        return [self.experiences[i] for i in recent_indices]
 
 if __name__ == '__main__':
     env = Observer()

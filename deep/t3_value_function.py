@@ -82,7 +82,7 @@ class ValueFanctionTrainer(Trainer):
 
     def step(self, episode, step_count, agent: ValueFunctionAgent, experiences):
         if self.has_trained:
-            batch = random.sample(self.experiences, self.baych_size)
+            batch = random.sample(self.experiences, self.batch_size)
             agent.update(batch, self.gamma)
 
     def reward_func(self, state_type):
